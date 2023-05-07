@@ -18,7 +18,9 @@ type profileDataForUpdate struct {
 func (h *Handler) UpdateProfile(c *gin.Context) {
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
 		return
 	}
 	claims := claimsData.(*models.Claims)
