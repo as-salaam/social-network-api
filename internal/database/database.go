@@ -2,7 +2,7 @@ package database
 
 import (
 	"fmt"
-	"github.com/softclub-go-0-0/instagram-api-service/internal/models"
+	"github.com/softclub-go-0-0/social-network-api/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

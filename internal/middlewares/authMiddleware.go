@@ -3,7 +3,7 @@ package middlewares
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/softclub-go-0-0/instagram-api-service/internal/models"
+	"github.com/softclub-go-0-0/social-network-api/internal/models"
 	"gorm.io/gorm"
 	"log"
 	"net/http"

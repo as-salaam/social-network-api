@@ -1,4 +1,4 @@
-module github.com/softclub-go-0-0/instagram-api-service
+module github.com/softclub-go-0-0/social-network-api
 
 go 1.20
 

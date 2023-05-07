@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/softclub-go-0-0/instagram-api-service/internal/handlers"
+	"github.com/softclub-go-0-0/social-network-api/internal/handlers"
 	"log"
 )
 
