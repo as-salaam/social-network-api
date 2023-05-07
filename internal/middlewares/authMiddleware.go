@@ -22,9 +22,10 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 
 		claims := &models.Claims{}
 		jwtToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return "key", nil
+			return []byte("key"), nil
 		})
 		if err != nil || !jwtToken.Valid {
+			log.Println("invalid token")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "Unauthorized",
 			})
@@ -41,7 +42,7 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		if !token.IsValid {
-			log.Print("token is invalid:", err)
+			log.Print("token is invalid")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "Unauthorized",
 			})
