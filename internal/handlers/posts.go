@@ -11,6 +11,141 @@ import (
 	"strings"
 )
 
+func (h *Handler) CreatePost(c *gin.Context) {
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
+	form, _ := c.MultipartForm()
+
+	content, exists := form.Value["content"]
+	if !exists || len(content) != 1 || content[0] == "" {
+		log.Println("invalid post data")
+		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+			"message": "Validation error",
+			"errors":  "Content field is required and it should be text",
+		})
+		return
+	}
+
+	files := form.File["photos[]"]
+	for _, file := range files {
+		extension := filepath.Ext(file.Filename)
+		if extension != ".jpg" && extension != ".jpeg" && extension != ".png" {
+			c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+				"message": "Invalid file extension",
+			})
+			return
+		}
+	}
+
+	var post models.Post
+
+	post.UserID = claims.UserID
+	post.Content = content[0]
+
+	if err := h.DB.Create(&post).Error; err != nil {
+		log.Println("inserting post data to DB:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	for _, file := range files {
+		extension := filepath.Ext(file.Filename)
+		newFileName := "assets/post-files/"
+		newFileName += uuid.New().String() + extension
+
+		err := c.SaveUploadedFile(file, newFileName)
+		if err != nil {
+			log.Println("saving file to filesystem:", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+			})
+			return
+		}
+
+		var postFile models.File
+		postFile.PostID = post.ID
+		postFile.Path = "http://127.0.0.1:4000/" + newFileName
+
+		if err = h.DB.Create(&postFile).Error; err != nil {
+			log.Println("inserting file data to DB:", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal server error",
+			})
+			return
+		}
+	}
+
+	if err := h.DB.Preload("Files").First(&post).Error; err != nil {
+		log.Println("getting post data from DB:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, post)
+}
+
+func (h *Handler) GetPost(c *gin.Context) {
+	var post models.Post
+	if err := h.DB.Where("id = ?", c.Param("postID")).Preload("Files").First(&post).Error; err != nil {
+		log.Println("getting post from DB:", err)
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"message": "Not Found",
+		})
+		return
+	}
+
+	var user models.User
+	if err := h.DB.Where("id = ?", post.UserID).First(&user).Error; err != nil {
+		log.Println("getting user from DB:", err)
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"message": "Not Found",
+		})
+		return
+	}
+
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		log.Println("claims doesn't exist")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
+	if post.UserID == claims.UserID {
+		c.JSON(http.StatusOK, post)
+		return
+	} else {
+		var profile models.Profile
+		if result := h.DB.Where("user_id = ?", user.ID).First(&profile); result.Error != nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+				"message": "Not Found",
+			})
+			return
+		}
+
+		if profile.Type == "public" {
+			c.JSON(http.StatusOK, post)
+			return
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "This account is private",
+			})
+			return
+		}
+	}
+}
+
 type PostData struct {
 	Content string `json:"content" binding:"required"`
 }
@@ -127,139 +262,4 @@ func (h *Handler) DeletePost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Successfully deleted post",
 	})
-}
-
-func (h *Handler) GetPost(c *gin.Context) {
-	var post models.Post
-	if err := h.DB.Where("id = ?", c.Param("postID")).Preload("Files").First(&post).Error; err != nil {
-		log.Println("getting post from DB:", err)
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"message": "Not Found",
-		})
-		return
-	}
-
-	var user models.User
-	if err := h.DB.Where("id = ?", post.UserID).First(&user).Error; err != nil {
-		log.Println("getting user from DB:", err)
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"message": "Not Found",
-		})
-		return
-	}
-
-	claimsData, exist := c.Get("authClaims")
-	if !exist {
-		log.Println("claims doesn't exist")
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"message": "Unauthorized",
-		})
-		return
-	}
-	claims := claimsData.(*models.Claims)
-
-	if post.UserID == claims.UserID {
-		c.JSON(http.StatusOK, post)
-		return
-	} else {
-		var profile models.Profile
-		if result := h.DB.Where("user_id = ?", user.ID).First(&profile); result.Error != nil {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-				"message": "Not Found",
-			})
-			return
-		}
-
-		if profile.Type == "public" {
-			c.JSON(http.StatusOK, post)
-			return
-		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "This account is private",
-			})
-			return
-		}
-	}
-}
-
-func (h *Handler) CreatePost(c *gin.Context) {
-	claimsData, exist := c.Get("authClaims")
-	if !exist {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-	claims := claimsData.(*models.Claims)
-
-	form, _ := c.MultipartForm()
-
-	content, exists := form.Value["content"]
-	if !exists || len(content) != 1 || content[0] == "" {
-		log.Println("invalid post data")
-		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
-			"message": "Validation error",
-			"errors":  "Content field is required and it should be text",
-		})
-		return
-	}
-
-	files := form.File["photos[]"]
-	for _, file := range files {
-		extension := filepath.Ext(file.Filename)
-		if extension != ".jpg" && extension != ".jpeg" && extension != ".png" {
-			c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
-				"message": "Invalid file extension",
-			})
-			return
-		}
-	}
-
-	var post models.Post
-
-	post.UserID = claims.UserID
-	post.Content = content[0]
-
-	if err := h.DB.Create(&post).Error; err != nil {
-		log.Println("inserting post data to DB:", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal Server Error",
-		})
-		return
-	}
-
-	for _, file := range files {
-		extension := filepath.Ext(file.Filename)
-		newFileName := "assets/post-files/"
-		newFileName += uuid.New().String() + extension
-
-		err := c.SaveUploadedFile(file, newFileName)
-		if err != nil {
-			log.Println("saving file to filesystem:", err)
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal Server Error",
-			})
-			return
-		}
-
-		var postFile models.File
-		postFile.PostID = post.ID
-		postFile.Path = "http://127.0.0.1:4000/" + newFileName
-
-		if err = h.DB.Create(&postFile).Error; err != nil {
-			log.Println("inserting file data to DB:", err)
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal server error",
-			})
-			return
-		}
-	}
-
-	if err := h.DB.Preload("Files").First(&post).Error; err != nil {
-		log.Println("getting post data from DB:", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal server error",
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, post)
 }

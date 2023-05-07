@@ -9,7 +9,11 @@ import (
 
 func (h *Handler) GetOneUser(c *gin.Context) {
 	var user models.User
-	if err := h.DB.Where("login = ?", c.Param("login")).Preload("Profile").Preload("Posts.Files").First(&user).Error; err != nil {
+	err := h.DB.Where("login = ?", c.Param("login")).
+		Preload("Profile").
+		Preload("Posts.Files").
+		First(&user).Error
+	if err != nil {
 		log.Println("getting a user:", err)
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "no such user",
