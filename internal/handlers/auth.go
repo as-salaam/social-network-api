@@ -17,14 +17,17 @@ type UserRegistrationData struct {
 func (h *Handler) Register(c *gin.Context) {
 	var userData UserRegistrationData
 	if err := c.ShouldBindJSON(&userData); err != nil {
-		c.AbortWithStatus(http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Validation error",
+			"errors":  err.Error(),
+		})
 		return
 	}
 
 	var user models.User
 	if result := h.DB.Where("login = ?", userData.Login).First(&user); result.Error == nil {
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
-			"message": "There is a user registered with such email already",
+			"message": "There is a user registered with such login already",
 		})
 		return
 	}
