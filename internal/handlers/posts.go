@@ -58,3 +58,44 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 
 	c.JSON(http.StatusOK, post)
 }
+
+func (h *Handler) DeletePost(c *gin.Context) {
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
+	var post models.Post
+
+	if err := h.DB.Where("id = ?", c.Param("postID")).First(&post).Error; err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "NotFound",
+		})
+		return
+	}
+
+	if post.UserID != claims.UserID {
+		log.Println("deleting another user's post")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+
+	if err := h.DB.Where("id = ?", c.Param("postID")).First(&post).Error; err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "InternalServerError",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "deleted post",
+	})
+}
