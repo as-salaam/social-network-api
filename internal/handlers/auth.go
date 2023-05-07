@@ -140,11 +140,18 @@ func (h *Handler) Logout(c *gin.Context) {
 
 	var token models.Token
 
-	if result := h.DB.Where("id=?", claims.TokenID).First(&token); result.Error != nil {
+	if err := h.DB.Where("id = ?", c.Param("TokenID")).First(&token).Error; err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{})
 	}
 
 	token.IsValid = false
+
+	if result := h.DB.Save(&token); result.Error != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Successfully logged out",
