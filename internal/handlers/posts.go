@@ -18,6 +18,7 @@ type PostData struct {
 func (h *Handler) UpdatePost(c *gin.Context) {
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
+		log.Println("claims doesn't exist")
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -52,7 +53,10 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.DB.Model(&post).Updates(postData).Error; err != nil {
+	post.Content = postData.Content
+
+	// todo: find out why using .Updates(postData) doesn't put updated_at timestamp
+	if err := h.DB.Save(&post).Error; err != nil {
 		log.Println("updating post data in DB:", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
