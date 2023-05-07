@@ -126,3 +126,35 @@ func (h *Handler) Login(c *gin.Context) {
 		"token": jwtToken,
 	})
 }
+
+func (h *Handler) Logout(c *gin.Context) {
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "unauthorized",
+		})
+		return
+	}
+
+	claims := claimsData.(*models.Claims)
+
+	var token models.Token
+
+	if err := h.DB.Where("id = ?", claims.TokenID).First(&token).Error; err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{})
+	}
+
+	token.IsValid = false
+
+	if result := h.DB.Save(&token); result.Error != nil {
+		log.Println(result.Error)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Successfully logged out",
+	})
+}
