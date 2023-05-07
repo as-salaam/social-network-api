@@ -80,7 +80,7 @@ func (h *Handler) Login(c *gin.Context) {
 	var credentials models.Credentials
 	if err := c.ShouldBindJSON(&credentials); err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"message": "Status unauthorized",
+			"message": "Unauthorized",
 		})
 		return
 	}
@@ -88,7 +88,7 @@ func (h *Handler) Login(c *gin.Context) {
 	var user models.User
 	if result := h.DB.Where("login = ?", credentials.Login).First(&user); result.Error != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"message": "Status unauthorized",
+			"message": "Unauthorized",
 		})
 		return
 	}
@@ -96,7 +96,7 @@ func (h *Handler) Login(c *gin.Context) {
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"message": "Status unauthorized",
+			"message": "Unauthorized",
 		})
 		return
 	}
@@ -105,7 +105,7 @@ func (h *Handler) Login(c *gin.Context) {
 	token.ExpiresAt = time.Now().Add(10 * time.Minute)
 
 	if result := h.DB.Create(&token); result.Error != nil {
-		log.Println("inserting user data to DB:", err)
+		log.Println("inserting token data to DB:", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
 		})
