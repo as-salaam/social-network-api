@@ -12,6 +12,6 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	Profile Profile
-	Posts   []Post `json:"posts,omitempty"`
+	Profile *Profile `json:"profile,omitempty"`
+	Posts   []Post   `json:"posts,omitempty"`
 }
