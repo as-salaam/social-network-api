@@ -102,7 +102,7 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 
 	extension := filepath.Ext(uploadedPhoto.Filename)
 
-	if extension != ".jpg" || extension != ".jpeg" {
+	if extension != ".jpg" || extension != ".jpeg" || extension != ".jpeg" {
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
 			"message": "Invalid file extension",
 		})

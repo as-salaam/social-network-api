@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/softclub-go-0-0/instagram-api-service/internal/models"
 	"log"
 	"net/http"
+	"path/filepath"
 )
 
 type PostData struct {
@@ -108,27 +110,76 @@ func (h *Handler) CreatePost(c *gin.Context) {
 	}
 	claims := claimsData.(*models.Claims)
 
-	var postData PostData
-	err := c.ShouldBindJSON(&postData)
-	if err != nil {
-		log.Println("creating post:", err)
+	form, _ := c.MultipartForm()
+
+	content, exists := form.Value["content"]
+	if !exists || len(content) != 1 || content[0] == "" {
+		log.Println("invalid post data")
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
-			"message": "validation error",
-			"err":     err.Error(),
+			"message": "Validation error",
+			"errors":  "Content field is required and it should be text",
 		})
 		return
 	}
-	var post models.Post
-	
-	post.UserID = claims.UserID
-	post.Content = postData.Content
 
-	if h.DB.Create(&post).Error != nil {
+	files := form.File["photos[]"]
+	for _, file := range files {
+		extension := filepath.Ext(file.Filename)
+		if extension != ".jpg" || extension != ".jpeg" || extension != ".png" {
+			c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+				"message": "Invalid file extension",
+			})
+			return
+		}
+	}
+
+	var post models.Post
+
+	post.UserID = claims.UserID
+	post.Content = content[0]
+
+	if err := h.DB.Create(&post).Error; err != nil {
 		log.Println("inserting post data to DB:", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
 		})
 		return
 	}
+
+	for _, file := range files {
+		extension := filepath.Ext(file.Filename)
+		newFileName := "assets/post-files/"
+		newFileName += uuid.New().String() + extension
+
+		err := c.SaveUploadedFile(file, newFileName)
+		if err != nil {
+			log.Println("saving file to filesystem:", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+			})
+			return
+		}
+
+		var postFile models.File
+		postFile.PostID = post.ID
+		postFile.Path = "http://127.0.0.1:4000/" + newFileName
+
+		if err = h.DB.Create(&postFile).Error; err != nil {
+			log.Println("inserting file data to DB:", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal server error",
+			})
+			return
+		}
+	}
+
+	if err := h.DB.Preload("Files").First(&post).Error; err != nil {
+		log.Println("getting post data from DB:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+
 	c.JSON(http.StatusCreated, post)
 }
