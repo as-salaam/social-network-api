@@ -22,4 +22,5 @@ type Token struct {
 	IsValid   bool      `gorm:"default:true"`
 	ExpiresAt time.Time
 	CreatedAt time.Time
+	UpdatedAt time.Time
 }
