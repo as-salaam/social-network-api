@@ -62,7 +62,18 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
+	var newProfile models.Profile
+	newProfile.UserID = user.ID
+
+	if result := h.DB.Create(&newProfile); result.Error != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, user)
+
 }
 
 func (h *Handler) Login(c *gin.Context) {
