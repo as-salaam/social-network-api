@@ -142,7 +142,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 	}
 
 	claimsData, exist := c.Get("authClaims")
-	if exist {
+	if !exist {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized",
 		})
