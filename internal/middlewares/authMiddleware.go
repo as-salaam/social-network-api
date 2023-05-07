@@ -29,6 +29,5 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		c.Set("authClaims", claims)
 		c.Next()
-
 	}
 }
