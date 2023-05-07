@@ -19,6 +19,7 @@ type Claims struct {
 
 type Token struct {
 	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	IsValid   bool      `gorm:"default:true"`
 	ExpiresAt time.Time
-	Status    string `gorm:"default:valid"`
+	CreatedAt time.Time
 }

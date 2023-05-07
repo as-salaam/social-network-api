@@ -4,25 +4,44 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/softclub-go-0-0/instagram-api-service/internal/models"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("X-Auth-Token")
 		if tokenString == "" {
-			log.Print()
+			log.Print("empty token")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "Unauthorized",
 			})
+			return
 		}
 
 		claims := &models.Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		jwtToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return "key", nil
 		})
-		if err != nil || !token.Valid {
+		if err != nil || !jwtToken.Valid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "Unauthorized",
+			})
+			return
+		}
+
+		var token models.Token
+		if err = db.Where("id = ?", claims.TokenID).First(&token).Error; err != nil {
+			log.Print("getting token:", err)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "Unauthorized",
+			})
+			return
+		}
+
+		if !token.IsValid {
+			log.Print("token is invalid:", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "Unauthorized",
 			})
