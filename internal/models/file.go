@@ -5,13 +5,10 @@ import (
 	"time"
 )
 
-type User struct {
+type File struct {
 	ID        uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Login     string    `json:"login"`
-	Password  string    `json:"-"`
+	PostID    uuid.UUID `json:"post_id"`
+	Path      string    `json:"path"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-
-	Profile Profile
-	Posts   []Post `json:"posts,omitempty"`
 }
