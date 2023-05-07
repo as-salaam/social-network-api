@@ -12,12 +12,27 @@ type PostUpdateData struct {
 }
 
 func (h *Handler) UpdatePost(c *gin.Context) {
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
 	var post models.Post
 	err := h.DB.Where("id = ?", c.Param("postID")).First(&post).Error
 	if err != nil {
 		log.Println("getting post:", err)
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "Not Found",
+		})
+		return
+	}
+
+	if post.UserID != claims.UserID {
+		log.Println("updating another users post")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
 		})
 		return
 	}
