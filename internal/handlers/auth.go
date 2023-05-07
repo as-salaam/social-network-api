@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/softclub-go-0-0/instagram-api-service/internal/models"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
+	"time"
 )
 
 type UserRegistrationData struct {
@@ -60,5 +62,67 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
+	var newProfile models.Profile
+	newProfile.UserID = user.ID
+
+	if result := h.DB.Create(&newProfile); result.Error != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, user)
+
+}
+
+func (h *Handler) Login(c *gin.Context) {
+	var credentials models.Credentials
+	if err := c.ShouldBindJSON(&credentials); err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+
+	var user models.User
+	if result := h.DB.Where("login = ?", credentials.Login).First(&user); result.Error != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+
+	var token models.Token
+	token.ExpiresAt = time.Now().Add(10 * time.Minute)
+
+	if result := h.DB.Create(&token); result.Error != nil {
+		log.Println("inserting token data to DB:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	claims := &models.Claims{
+		UserID:  user.ID,
+		TokenID: token.ID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(token.ExpiresAt),
+		},
+	}
+
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": jwtToken,
+	})
 }
