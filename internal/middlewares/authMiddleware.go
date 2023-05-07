@@ -14,7 +14,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		if tokenString == "" {
 			log.Print()
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "User unauthorized",
+				"message": "Unauthorized",
 			})
 		}
 
@@ -23,7 +23,9 @@ func AuthMiddleware() gin.HandlerFunc {
 			return "key", nil
 		})
 		if err != nil || !token.Valid {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "Unauthorized",
+			})
 			return
 		}
 
