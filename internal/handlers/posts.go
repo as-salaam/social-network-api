@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-type PostUpdateData struct {
+type PostData struct {
 	Content string `json:"content" binding:"required"`
 }
 
@@ -37,7 +37,7 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	var postData PostUpdateData
+	var postData PostData
 
 	if err := c.ShouldBindJSON(&postData); err != nil {
 		log.Println("binding post data:", err)
@@ -98,4 +98,29 @@ func (h *Handler) DeletePost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "deleted post",
 	})
+}
+
+func (h *Handler) CreatePost(c *gin.Context) {
+	var post PostData
+	err := c.ShouldBindJSON(&post)
+	if err != nil {
+		log.Println("creating post:", err)
+		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+			"message": "validation error",
+			"err":     err.Error(),
+		})
+		return
+	}
+	var postOriginal models.Post
+
+	postOriginal.Content = post.Content
+
+	if h.DB.Create(&postOriginal).Error != nil {
+		log.Println("inserting post data to DB:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+	c.JSON(http.StatusCreated, post)
 }
