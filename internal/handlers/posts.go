@@ -70,6 +70,7 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 func (h *Handler) DeletePost(c *gin.Context) {
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
+		log.Println("claims doesn't exist")
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized",
 		})
@@ -81,7 +82,7 @@ func (h *Handler) DeletePost(c *gin.Context) {
 	if err := h.DB.Where("id = ?", c.Param("postID")).Preload("Files").First(&post).Error; err != nil {
 		log.Println("getting post from db", err)
 		c.JSON(http.StatusNotFound, gin.H{
-			"message": "NotFound",
+			"message": "Not Found",
 		})
 		return
 	}
@@ -107,7 +108,7 @@ func (h *Handler) DeletePost(c *gin.Context) {
 		}
 	}
 
-	if err := h.DB.Model(&post).Association("Files").Clear(); err != nil {
+	if err := h.DB.Where("post_id = ?", post.ID).Delete(&models.File{}).Error; err != nil {
 		log.Println("deleting files from DB:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "InternalServerError",
@@ -118,7 +119,7 @@ func (h *Handler) DeletePost(c *gin.Context) {
 	if err := h.DB.Delete(&post).Error; err != nil {
 		log.Println("deleting post from DB:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "InternalServerError",
+			"message": "Internal Server Error",
 		})
 		return
 	}
