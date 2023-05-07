@@ -2,17 +2,19 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/softclub-go-0-0/instagram-api-service/internal/models"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
+	"path/filepath"
 )
 
 type profileDataForUpdate struct {
 	Email string `json:"omitempty,email"`
 	Type  string `json:"type" binding:"required"`
 	Bio   string `json:"bio"`
-	Link  string `json:"omitempty,url"`
+	Link  string `json:"link" binding:"omitempty,url"`
 }
 
 func (h *Handler) UpdateProfile(c *gin.Context) {
@@ -69,4 +71,64 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, profile)
+}
+
+func (h *Handler) UploadAvatar(c *gin.Context) {
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
+	var user models.User
+	if err := h.DB.Where("id = ?", claims.UserID).Preload("Profile").First(&user); err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+
+	uploadedPhoto, err := c.FormFile("photo")
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Bad request",
+		})
+		return
+	}
+
+	extension := filepath.Ext(uploadedPhoto.Filename)
+
+	if extension != ".jpg" || extension != ".jpeg" {
+		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+			"message": "Invalid file extension",
+		})
+		return
+	}
+
+	newFileName := "assets/avatars/"
+	newFileName += uuid.New().String() + extension
+
+	err = c.SaveUploadedFile(uploadedPhoto, newFileName)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	user.Profile.Avatar = "http://127.0.0.1:4000/" + newFileName
+
+	if err = h.DB.Save(&user.Profile).Error; err != nil {
+		log.Println("updating profile", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user.Profile)
 }
