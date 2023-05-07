@@ -102,6 +102,56 @@ func (h *Handler) DeletePost(c *gin.Context) {
 	})
 }
 
+func (h *Handler) GetPost(c *gin.Context) {
+	var post models.Post
+	if result := h.DB.Where("postID = ?", c.Param("PostID")).First(&post); result.Error != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"message": "Not Found",
+		})
+		return
+	}
+
+	var user models.User
+	if result := h.DB.Where("ID = ?", post.UserID).First(&user); result.Error != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"message": "Not Found",
+		})
+		return
+	}
+
+	claimsData, exist := c.Get("authClaims")
+	if exist {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
+	if post.UserID == claims.UserID {
+		c.JSON(http.StatusOK, post)
+		return
+	} else {
+		var profile models.Profile
+		if result := h.DB.Where("user_id = ?", user.ID).First(&profile); result.Error != nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+				"message": "Not Found",
+			})
+			return
+		}
+
+		if profile.Type == "public" {
+			c.JSON(http.StatusOK, post)
+			return
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "This account is private",
+			})
+			return
+		}
+	}
+}
+
 func (h *Handler) CreatePost(c *gin.Context) {
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
