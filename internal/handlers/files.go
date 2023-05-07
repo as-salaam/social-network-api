@@ -9,14 +9,20 @@ import (
 )
 
 type profileDataForUpdate struct {
-	Avatar string `json:"avatar"`
-	Email  string `json:"email"`
-	Type   string `json:"type"`
-	Bio    string `json:"bio"`
-	Link   string `json:"link"`
+	Email string `json:"omitempty,email"`
+	Type  string `json:"type" binding:"required"`
+	Bio   string `json:"bio"`
+	Link  string `json:"omitempty,url"`
 }
 
 func (h *Handler) UpdateProfile(c *gin.Context) {
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
 	var profile models.Profile
 
 	if err := h.DB.Where("id = ?", c.Param("profileID")).First(&profile).Error; err != nil {
@@ -30,6 +36,14 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		log.Println("getting a profile:", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	if profile.UserID != claims.UserID {
+		log.Println("updating another users profile")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
 		})
 		return
 	}
