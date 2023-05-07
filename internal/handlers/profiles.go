@@ -141,6 +141,7 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 func (h *Handler) RemoveAvatar(c *gin.Context) {
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
+		log.Println("claims doesn't exist")
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized",
 		})
@@ -149,7 +150,8 @@ func (h *Handler) RemoveAvatar(c *gin.Context) {
 	claims := claimsData.(*models.Claims)
 
 	var user models.User
-	if err := h.DB.Where("id = ?", claims.UserID).Preload("Profile").First(&user); err != nil {
+	if err := h.DB.Where("id = ?", claims.UserID).Preload("Profile").First(&user).Error; err != nil {
+		log.Println("getting user's profile:", err)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized",
 		})
