@@ -7,7 +7,9 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 type profileDataForUpdate struct {
@@ -114,6 +116,7 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 
 	err = c.SaveUploadedFile(uploadedPhoto, newFileName)
 	if err != nil {
+		log.Println("saving photo to filesystem", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
 		})
@@ -130,5 +133,47 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, user.Profile)
+	c.JSON(http.StatusOK, user.Profile)
+}
+
+func (h *Handler) RemoveAvatar(c *gin.Context) {
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
+	var user models.User
+	if err := h.DB.Where("id = ?", claims.UserID).Preload("Profile").First(&user); err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+
+	pathSlice := strings.Split(user.Profile.Avatar, "/")
+	fileName := pathSlice[len(pathSlice)-1]
+	err := os.RemoveAll("assets/avatars/" + fileName)
+	if err != nil {
+		log.Println("removing avatar from filesystem", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	user.Profile.Avatar = ""
+
+	if err = h.DB.Save(&user.Profile).Error; err != nil {
+		log.Println("updating profile", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, user.Profile)
 }
