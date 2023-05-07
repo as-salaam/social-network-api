@@ -107,11 +107,13 @@ func (h *Handler) GetPost(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "Not Found",
 		})
+		return
 	}
 	if result := h.DB.Where("ID = ?", post.UserID).First(&user); result.Error != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "Not Found",
 		})
+		return
 	}
 
 	claimsData, exist := c.Get("authClaims")
@@ -126,33 +128,21 @@ func (h *Handler) GetPost(c *gin.Context) {
 	var profile models.Profile
 
 	if post.UserID == claims.UserID {
-		err := c.ShouldBindJSON(&post)
-		if err != nil {
-			log.Println(err)
-		}
-
-		c.AbortWithStatusJSON(http.StatusOK, gin.H{
-			"message": "Status OK",
-		})
+		c.JSON(http.StatusOK, post)
 	} else {
-		if result := h.DB.Where("ProfileID = ?", user.Profile).First(&profile); result.Error != nil {
+		if result := h.DB.Where("user_id = ?", user.ID).First(&profile); result.Error != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 				"message": "Not Found",
 			})
-			if profile.Type == "public" {
-				err := c.ShouldBindJSON(&post)
-				if err != nil {
-					log.Println(err)
-				}
-
-				c.AbortWithStatusJSON(http.StatusOK, gin.H{
-					"message": "Status OK",
-				})
-			} else {
-				c.AbortWithStatusJSON(http.StatusOK, gin.H{
-					"message": "This account is private",
-				})
-			}
+			return
+		}
+		if profile.Type == "public" {
+			c.JSON(http.StatusOK, post)
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "This account is private",
+			})
+			return
 		}
 	}
 }
