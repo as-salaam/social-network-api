@@ -77,6 +77,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 func (h *Handler) UploadAvatar(c *gin.Context) {
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
+		log.Println("claims doesn't exist")
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized",
 		})
@@ -85,7 +86,8 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 	claims := claimsData.(*models.Claims)
 
 	var user models.User
-	if err := h.DB.Where("id = ?", claims.UserID).Preload("Profile").First(&user); err != nil {
+	if err := h.DB.Where("id = ?", claims.UserID).Preload("Profile").First(&user).Error; err != nil {
+		log.Println("getting user's profile:", err)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized",
 		})
@@ -94,7 +96,7 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 
 	uploadedPhoto, err := c.FormFile("photo")
 	if err != nil {
-		log.Println(err)
+		log.Println("getting file from request:", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Bad request",
 		})
@@ -103,9 +105,10 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 
 	extension := filepath.Ext(uploadedPhoto.Filename)
 
-	if extension != ".jpg" || extension != ".jpeg" || extension != ".png" {
+	if extension != ".jpg" && extension != ".jpeg" && extension != ".png" {
+		log.Println("invalid file extension:", extension)
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
-			"message": "Invalid file extension",
+			"message": "Invalid file extension. Upload an image please.",
 		})
 		return
 	}
