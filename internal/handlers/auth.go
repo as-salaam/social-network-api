@@ -121,9 +121,17 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := jwtToken.SignedString([]byte("key"))
+	if err != nil {
+		log.Println("signing JWT token:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"token": jwtToken,
+		"token": tokenString,
 	})
 }
 
