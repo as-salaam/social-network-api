@@ -30,6 +30,9 @@ func main() {
 
 	router := gin.Default()
 
+	// files route
+	router.Static("/assets", "./assets")
+
 	// users routes
 	router.GET("/:login", h.GetOneUser) // +
 
