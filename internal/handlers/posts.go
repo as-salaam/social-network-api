@@ -5,6 +5,8 @@ import (
 	"github.com/softclub-go-0-0/instagram-api-service/internal/models"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 )
 
 type PostUpdateData struct {
@@ -70,9 +72,8 @@ func (h *Handler) DeletePost(c *gin.Context) {
 	claims := claimsData.(*models.Claims)
 
 	var post models.Post
-
-	if err := h.DB.Where("id = ?", c.Param("postID")).First(&post).Error; err != nil {
-		log.Println(err.Error())
+	if err := h.DB.Where("id = ?", c.Param("postID")).Preload("Files").First(&post).Error; err != nil {
+		log.Println("getting post from db", err)
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "NotFound",
 		})
@@ -87,8 +88,29 @@ func (h *Handler) DeletePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.DB.Where("id = ?", c.Param("postID")).First(&post).Error; err != nil {
-		log.Println(err.Error())
+	for _, file := range post.Files {
+		pathSlice := strings.Split(file.Path, "/")
+		fileName := pathSlice[len(pathSlice)-1]
+		err := os.RemoveAll("assets/post-files/" + fileName)
+		if err != nil {
+			log.Println("removing file from filesystem:", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+			})
+			return
+		}
+	}
+
+	if err := h.DB.Model(&post).Association("Files").Clear(); err != nil {
+		log.Println("deleting files from DB:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "InternalServerError",
+		})
+		return
+	}
+
+	if err := h.DB.Delete(&post).Error; err != nil {
+		log.Println("deleting post from DB:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "InternalServerError",
 		})
@@ -96,6 +118,6 @@ func (h *Handler) DeletePost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "deleted post",
+		"message": "Successfully deleted post",
 	})
 }
