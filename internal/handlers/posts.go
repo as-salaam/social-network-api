@@ -101,8 +101,15 @@ func (h *Handler) DeletePost(c *gin.Context) {
 }
 
 func (h *Handler) CreatePost(c *gin.Context) {
-	var post PostData
-	err := c.ShouldBindJSON(&post)
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
+	var postData PostData
+	err := c.ShouldBindJSON(&postData)
 	if err != nil {
 		log.Println("creating post:", err)
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
@@ -111,11 +118,12 @@ func (h *Handler) CreatePost(c *gin.Context) {
 		})
 		return
 	}
-	var postOriginal models.Post
+	var post models.Post
+	
+	post.UserID = claims.UserID
+	post.Content = postData.Content
 
-	postOriginal.Content = post.Content
-
-	if h.DB.Create(&postOriginal).Error != nil {
+	if h.DB.Create(&post).Error != nil {
 		log.Println("inserting post data to DB:", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
