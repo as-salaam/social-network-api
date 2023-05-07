@@ -69,11 +69,10 @@ func (h *Handler) DeletePost(c *gin.Context) {
 	}
 	claims := claimsData.(*models.Claims)
 
-	postID := c.Param("postID")
-
 	var post models.Post
-	result := h.DB.First(&post, postID)
-	if result.Error != nil {
+
+	if err := h.DB.Where("id = ?", c.Param("postID")).First(&post).Error; err != nil {
+		log.Println(err.Error())
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "NotFound",
 		})
@@ -88,8 +87,8 @@ func (h *Handler) DeletePost(c *gin.Context) {
 		return
 	}
 
-	result = h.DB.Delete(&post, postID)
-	if result.Error != nil {
+	if err := h.DB.Where("id = ?", c.Param("postID")).First(&post).Error; err != nil {
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "InternalServerError",
 		})
