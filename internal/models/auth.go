@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"time"
 )
 
 type Credentials struct {
@@ -11,6 +12,14 @@ type Credentials struct {
 }
 
 type Claims struct {
-	UserID uuid.UUID
+	UserID  uuid.UUID
+	TokenID uuid.UUID
 	jwt.RegisteredClaims
+}
+
+type Token struct {
+	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	IsValid   bool      `gorm:"default:true"`
+	ExpiresAt time.Time
+	CreatedAt time.Time
 }
