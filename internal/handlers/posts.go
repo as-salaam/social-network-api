@@ -99,3 +99,46 @@ func (h *Handler) DeletePost(c *gin.Context) {
 		"message": "deleted post",
 	})
 }
+
+func (h *Handler) GetPost(c *gin.Context) {
+	var post models.Post
+	var user models.User
+	if result := h.DB.Where("postID", c.Param("PostID")).First(&post); result.Error != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"message": "Not Found",
+		})
+	}
+	if result := h.DB.Where("ID", post.UserID).First(&user); result.Error != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"message": "Not Found",
+		})
+	}
+
+	claimsData, exist := c.Get("authClaims")
+	if !exist {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+	claims := claimsData.(*models.Claims)
+
+	var profile models.Profile
+
+	if post.UserID == claims.UserID {
+		c.AbortWithStatusJSON(http.StatusOK, post)
+	} else {
+		if result := h.DB.Where("ProfileID", user.Profile).First(&profile); result.Error != nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+				"message": "Not Found",
+			})
+			if profile.Type == "public" {
+				c.AbortWithStatusJSON(http.StatusOK, post)
+			} else {
+				c.AbortWithStatusJSON(http.StatusOK, gin.H{
+					"message": "This account is private",
+				})
+			}
+		}
+	}
+}
