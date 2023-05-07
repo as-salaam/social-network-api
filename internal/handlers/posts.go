@@ -126,7 +126,8 @@ func (h *Handler) DeletePost(c *gin.Context) {
 
 func (h *Handler) GetPost(c *gin.Context) {
 	var post models.Post
-	if result := h.DB.Where("postID = ?", c.Param("PostID")).First(&post); result.Error != nil {
+	if err := h.DB.Where("id = ?", c.Param("postID")).Preload("Files").First(&post).Error; err != nil {
+		log.Println("getting post from DB:", err)
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "Not Found",
 		})
@@ -134,7 +135,8 @@ func (h *Handler) GetPost(c *gin.Context) {
 	}
 
 	var user models.User
-	if result := h.DB.Where("ID = ?", post.UserID).First(&user); result.Error != nil {
+	if err := h.DB.Where("id = ?", post.UserID).First(&user).Error; err != nil {
+		log.Println("getting user from DB:", err)
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "Not Found",
 		})
@@ -143,6 +145,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
+		log.Println("claims doesn't exist")
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized",
 		})
@@ -197,7 +200,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 	files := form.File["photos[]"]
 	for _, file := range files {
 		extension := filepath.Ext(file.Filename)
-		if extension != ".jpg" || extension != ".jpeg" || extension != ".png" {
+		if extension != ".jpg" && extension != ".jpeg" && extension != ".png" {
 			c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
 				"message": "Invalid file extension",
 			})
