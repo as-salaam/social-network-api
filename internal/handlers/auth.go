@@ -131,7 +131,7 @@ func (h *Handler) Logout(c *gin.Context) {
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"message": "",
+			"message": "unauthorized",
 		})
 		return
 	}
