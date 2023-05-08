@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"os"
 	"time"
 )
 
@@ -15,6 +16,6 @@ type File struct {
 }
 
 func (f *File) AfterFind(tx *gorm.DB) error {
-	f.Path = "http://localhost:4000" + f.Path
+	f.Path = os.Getenv("APP_URL") + f.Path
 	return nil
 }

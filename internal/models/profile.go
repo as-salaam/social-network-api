@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"os"
 	"time"
 )
 
@@ -19,6 +20,6 @@ type Profile struct {
 }
 
 func (p *Profile) AfterFind(tx *gorm.DB) error {
-	p.Avatar = "http://localhost:4000" + p.Avatar
+	p.Avatar = os.Getenv("APP_URL") + p.Avatar
 	return nil
 }

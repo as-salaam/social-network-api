@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/softclub-go-0-0/social-network-api/internal/database"
 	"github.com/softclub-go-0-0/social-network-api/internal/handlers"
 	"github.com/softclub-go-0-0/social-network-api/internal/middlewares"
@@ -11,6 +12,11 @@ import (
 )
 
 func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalln("Error loading .env file:", err)
+	}
+
 	DBHost := flag.String("dbhost", "localhost", "Enter the host of the DB server")
 	DBName := flag.String("dbname", "social_network_api", "Enter the name of the DB")
 	DBUser := flag.String("dbuser", "postgres", "Enter the name of a DB user")
