@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -11,4 +12,9 @@ type File struct {
 	Path      string    `json:"path"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (f *File) AfterFind(tx *gorm.DB) error {
+	f.Path = "http://localhost:4000" + f.Path
+	return nil
 }

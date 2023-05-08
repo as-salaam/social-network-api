@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -15,4 +16,9 @@ type Profile struct {
 	Link      string    `json:"link"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (p *Profile) AfterFind(tx *gorm.DB) error {
+	p.Avatar = "http://localhost:4000" + p.Avatar
+	return nil
 }

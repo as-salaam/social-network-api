@@ -125,7 +125,7 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	user.Profile.Avatar = "http://127.0.0.1:4000/" + newFileName
+	user.Profile.Avatar = "/" + newFileName
 
 	if err = h.DB.Save(&user.Profile).Error; err != nil {
 		log.Println("updating profile", err)

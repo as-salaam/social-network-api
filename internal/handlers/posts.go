@@ -71,7 +71,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 
 		var postFile models.File
 		postFile.PostID = post.ID
-		postFile.Path = "http://127.0.0.1:4000/" + newFileName
+		postFile.Path = "/" + newFileName
 
 		if err = h.DB.Create(&postFile).Error; err != nil {
 			log.Println("inserting file data to DB:", err)
