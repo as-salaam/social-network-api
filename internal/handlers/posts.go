@@ -34,7 +34,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 	files := form.File["photos[]"]
 	for _, file := range files {
 		extension := filepath.Ext(file.Filename)
-		if extension != ".jpg" && extension != ".jpeg" && extension != ".png" {
+		if extension != ".jpg" && extension != ".jpeg" && extension != ".png" && extension != ".mp4" {
 			c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
 				"message": "Invalid file extension",
 			})
