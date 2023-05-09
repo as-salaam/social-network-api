@@ -18,9 +18,9 @@ func main() {
 	}
 
 	DBHost := flag.String("dbhost", "localhost", "Enter the host of the DB server")
-	DBName := flag.String("dbname", "social_network_api", "Enter the name of the DB")
+	DBName := flag.String("dbname", "social_networking", "Enter the name of the DB")
 	DBUser := flag.String("dbuser", "postgres", "Enter the name of a DB user")
-	DBPassword := flag.String("dbpassword", "postgres", "Enter the password of user")
+	DBPassword := flag.String("dbpassword", "developer", "Enter the password of user")
 	DBPort := flag.Uint("dbport", 5432, "Enter the port of DB")
 	Timezone := flag.String("dbtimezone", "Asia/Dushanbe", "Enter your timezone to connect to the DB")
 	DBSSLMode := flag.Bool("dbsslmode", false, "Turns on ssl mode while connecting to DB")
