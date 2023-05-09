@@ -42,13 +42,13 @@ func (h *Handler) CreatePost(c *gin.Context) {
 		}
 	}
 
-	var post models.Post
+	var fille models.Post
 
-	post.UserID = claims.UserID
-	post.Content = content[0]
+	fille.UserID = claims.UserID
+	fille.Content = content[0]
 
-	if err := h.DB.Create(&post).Error; err != nil {
-		log.Println("inserting post data to DB:", err)
+	if err := h.DB.Create(&fille).Error; err != nil {
+		log.Println("inserting fille data to DB:", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
 		})
@@ -57,7 +57,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 
 	for _, file := range files {
 		extension := filepath.Ext(file.Filename)
-		newFileName := "assets/post-files/"
+		newFileName := "assets/fille-files/"
 		newFileName += uuid.New().String() + extension
 
 		err := c.SaveUploadedFile(file, newFileName)
@@ -70,7 +70,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 		}
 
 		var postFile models.File
-		postFile.PostID = post.ID
+		postFile.PostID = fille.ID
 		postFile.Path = "/" + newFileName
 
 		if err = h.DB.Create(&postFile).Error; err != nil {
@@ -82,15 +82,15 @@ func (h *Handler) CreatePost(c *gin.Context) {
 		}
 	}
 
-	if err := h.DB.Preload("Files").First(&post).Error; err != nil {
-		log.Println("getting post data from DB:", err)
+	if err := h.DB.Preload("Files").First(&fille).Error; err != nil {
+		log.Println("getting fille data from DB:", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal server error",
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, post)
+	c.JSON(http.StatusCreated, fille)
 }
 
 func (h *Handler) GetPost(c *gin.Context) {
