@@ -5,44 +5,47 @@ import (
 	"github.com/softclub-go-0-0/social-network-api/internal/models"
 	"log"
 	"net/http"
-	"path/filepath"
 )
+
+type createCommentData struct {
+	Text string `json:"text" binding:"required"`
+}
 
 func (h *Handler) CreateComment(c *gin.Context) {
 	claimsData, exist := c.Get("authClaims")
 	if !exist {
+		log.Println("claims doesn't exist")
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 	claims := claimsData.(*models.Claims)
 
-	form, _ := c.MultipartForm()
-
-	content, exists := form.Value["content"]
-	if !exists || len(content) != 1 || content[0] == "" {
-		log.Println("invalid post data")
+	var commentData createCommentData
+	if err := c.ShouldBindJSON(&commentData); err != nil {
+		log.Println("invalid comment data")
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
 			"message": "Validation error",
-			"errors":  "Content field is required and it should be text",
+			"errors":  err.Error(),
 		})
 		return
 	}
 
-	files := form.File["photos[]"]
-	for _, file := range files {
-		extension := filepath.Ext(file.Filename)
-		if extension != ".jpg" && extension != ".jpeg" && extension != ".png" {
-			c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
-				"message": "Invalid file extension",
-			})
-			return
-		}
+	var post models.Post
+	err := h.DB.Where("id = ?", c.Param("postID")).First(&post).Error
+	if err != nil {
+		log.Println("getting post:", err)
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"message": "Validation error",
+			"errors":  err.Error(),
+		})
+		return
 	}
 
 	var comment models.Comment
 
 	comment.UserID = claims.UserID
-	comment.Content = content[0]
+	comment.PostID = post.ID
+	comment.Text = commentData.Text
 
 	if err := h.DB.Create(&comment).Error; err != nil {
 		log.Println("inserting post data to DB:", err)
@@ -51,4 +54,6 @@ func (h *Handler) CreateComment(c *gin.Context) {
 		})
 		return
 	}
+
+	c.JSON(http.StatusOK, comment)
 }
