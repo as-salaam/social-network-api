@@ -113,6 +113,18 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
+	pathSlice := strings.Split(user.Profile.Avatar, "/")
+	filename := pathSlice[len(pathSlice)-1]
+	err = os.RemoveAll("assets/avatars/" + filename)
+	if err != nil {
+		log.Println("removing avatar from filesystem", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Interval server error",
+		})
+		return
+	}
+	user.Profile.Avatar = ""
+
 	newFileName := "assets/avatars/"
 	newFileName += uuid.New().String() + extension
 
