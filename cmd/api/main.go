@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalln("Error loading .env file:", err)
@@ -71,5 +70,5 @@ func main() {
 	router.PUT("/posts/:postID", h.UpdatePost)    // +
 	router.DELETE("/posts/:postID", h.DeletePost) // -
 
-	log.Fatal("router running:", router.Run(fmt.Sprintf(":%d", os.Getenv("PORT"))))
+	log.Fatal("router running:", router.Run(fmt.Sprintf(":%d", os.Getenv("APP_PORT"))))
 }
