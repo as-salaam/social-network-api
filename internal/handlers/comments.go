@@ -35,8 +35,7 @@ func (h *Handler) CreateComment(c *gin.Context) {
 	if err != nil {
 		log.Println("getting post:", err)
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"message": "Validation error",
-			"errors":  err.Error(),
+			"message": "Post not found",
 		})
 		return
 	}
