@@ -12,5 +12,6 @@ type Post struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	Files []File `json:"files,omitempty"`
+	Files    []File    `json:"files,omitempty"`
+	Comments []Comment `json:"comments,omitempty"`
 }
