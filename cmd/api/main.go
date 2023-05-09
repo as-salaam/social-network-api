@@ -32,24 +32,6 @@ func main() {
 		log.Fatal("db connection:", err)
 	}
 
-	// Something
-	// Something
-	// Something
-	// Something
-	// Something
-	// Something
-	// Something
-	// Something
-
-	// Something
-	// Something
-	// Something
-	// Something
-	// Something fixed
-	// Something
-	// Something
-	// Something
-
 	h := handlers.NewHandler(db)
 
 	router := gin.Default()
@@ -58,26 +40,27 @@ func main() {
 	router.Static("/assets", "./assets")
 
 	// users routes
-	router.GET("/:login", h.GetOneUser) // +
+	router.GET("/:login", h.GetOneUser)
 
 	// auth routes
-	router.POST("/register", h.Register) // +
-	router.POST("/login", h.Login)       // -
+	router.POST("/register", h.Register)
+	router.POST("/login", h.Login)
 
-	router.Use(middlewares.AuthMiddleware(db)) // -
+	router.Use(middlewares.AuthMiddleware(db))
 
-	router.POST("/logout", h.Logout) // +
+	router.POST("/logout", h.Logout)
 
 	// profile routes
-	router.PUT("/profile", h.UpdateProfile)          // -
-	router.POST("/profile/avatar", h.UploadAvatar)   // -
-	router.DELETE("/profile/avatar", h.RemoveAvatar) // -
+	router.PUT("/profile", h.UpdateProfile)
+	router.POST("/profile/avatar", h.UploadAvatar)
+	router.DELETE("/profile/avatar", h.RemoveAvatar)
 
 	// posts routes
-	router.POST("/posts", h.CreatePost)           // -
-	router.GET("/posts/:postID", h.GetPost)       // -
-	router.PUT("/posts/:postID", h.UpdatePost)    // +
-	router.DELETE("/posts/:postID", h.DeletePost) // -
+	router.POST("/posts", h.CreatePost)
+	router.GET("/posts/:postID", h.GetPost)
+	router.PUT("/posts/:postID", h.UpdatePost)
+	router.DELETE("/posts/:postID", h.DeletePost)
+	router.POST("/posts/:postID/comments", h.CreateComment)
 
 	log.Fatal("router running:", router.Run(fmt.Sprintf(":%d", *Port)))
 }

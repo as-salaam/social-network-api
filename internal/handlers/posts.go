@@ -95,7 +95,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 
 func (h *Handler) GetPost(c *gin.Context) {
 	var post models.Post
-	if err := h.DB.Where("id = ?", c.Param("postID")).Preload("Files").First(&post).Error; err != nil {
+	if err := h.DB.Where("id = ?", c.Param("postID")).Preload("Files").Preload("Comments").First(&post).Error; err != nil {
 		log.Println("getting post from DB:", err)
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "Not Found",
