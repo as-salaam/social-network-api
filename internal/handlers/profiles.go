@@ -113,7 +113,7 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	newFileName := "assets/avatars/"
+	newFileName := os.Getenv("APP_URL") + "/assets/avatars/"
 	newFileName += uuid.New().String() + extension
 
 	err = c.SaveUploadedFile(uploadedPhoto, newFileName)
