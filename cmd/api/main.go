@@ -32,6 +32,24 @@ func main() {
 		log.Fatal("db connection:", err)
 	}
 
+	// Something
+	// Something
+	// Something
+	// Something
+	// Something
+	// Something
+	// Something
+	// Something
+
+	// Something
+	// Something
+	// Something
+	// Something
+	// Something fixed
+	// Something
+	// Something
+	// Something
+
 	h := handlers.NewHandler(db)
 
 	router := gin.Default()
