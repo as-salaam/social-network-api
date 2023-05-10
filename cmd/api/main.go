@@ -72,6 +72,4 @@ func main() {
 	router.POST("/posts/:postID/comments", h.CreateComment)
 
 	log.Fatal("router running:", router.Run(fmt.Sprintf(":%d", os.Getenv("APP_PORT"))))
-
-	//Dubai
 }
