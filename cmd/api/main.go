@@ -71,5 +71,10 @@ func main() {
 	router.DELETE("/posts/:postID", h.DeletePost)
 	router.POST("/posts/:postID/comments", h.CreateComment)
 
+	//stories routes
+	router.POST("/stories", h.CreateStory)
+	router.GET("/stories/:storyID", h.GetStory)
+	router.DELETE("/stories/:storyID", h.DeleteStory)
+
 	log.Fatal("router running:", router.Run(fmt.Sprintf(":%d", os.Getenv("APP_PORT"))))
 }

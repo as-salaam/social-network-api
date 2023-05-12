@@ -27,6 +27,7 @@ func DBInit(host, name, user, password string, port uint, timezone string, ssl b
 		&models.File{},
 		&models.Token{},
 		&models.Comment{},
+		&models.Story{},
 	)
 	if err != nil {
 		return nil, err
