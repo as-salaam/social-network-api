@@ -15,4 +15,5 @@ type User struct {
 	Profile  *Profile  `json:"profile,omitempty"`
 	Posts    []Post    `json:"posts,omitempty"`
 	Comments []Comment `json:"comments,omitempty"`
+	Stories  []Story   `json:"stories,omitempty"`
 }
