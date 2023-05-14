@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/softclub-go-0-0/social-network-api/internal/database"
@@ -44,6 +43,7 @@ func main() {
 	h := handlers.NewHandler(db)
 
 	router := gin.Default()
+	router.Use(middlewares.CORSMiddleware())
 
 	// files route
 	router.Static("/assets", "./assets")
@@ -71,5 +71,5 @@ func main() {
 	router.DELETE("/posts/:postID", h.DeletePost)
 	router.POST("/posts/:postID/comments", h.CreateComment)
 
-	log.Fatal("router running:", router.Run(fmt.Sprintf(":%d", os.Getenv("APP_PORT"))))
+	log.Fatal("router running:", router.Run(":"+os.Getenv("APP_PORT")))
 }
